@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#172554">
+<title>OSRS Flip Tracker</title>
+<style>
+:root{color-scheme:dark;--bg:#0b1220;--panel:#141f33;--panel2:#1b2942;--text:#eef4ff;--muted:#a8b6cf;--accent:#7dd3fc;--line:#2c3b55;--good:#86efac;--bad:#fca5a5}
+*{box-sizing:border-box}body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;background:linear-gradient(160deg,#172554 0%,var(--bg) 45%);color:var(--text);min-height:100vh;padding:20px 13px 38px}main{max-width:760px;margin:auto}header{margin:7px 2px 18px}h1{margin:0 0 5px;font-size:clamp(1.7rem,6vw,2.25rem);letter-spacing:-.03em}header p,.hint{color:var(--muted);line-height:1.5;font-size:.88rem}.panel{background:rgba(20,31,51,.97);border:1px solid var(--line);border-radius:17px;padding:17px;margin:13px 0;box-shadow:0 10px 30px #0002}h2{font-size:1.08rem;margin:0 0 14px}.fields{display:grid;grid-template-columns:1fr 1fr;gap:12px}label{display:block;color:var(--muted);font-size:.86rem;margin:0 0 6px}input,select{width:100%;min-width:0;background:#0b1426;color:var(--text);border:1px solid #3a4b68;border-radius:10px;padding:11px;font:inherit;font-size:1rem}input:focus,select:focus{outline:2px solid #7dd3fc66;border-color:var(--accent)}.full{grid-column:1/-1}button{border:0;border-radius:10px;background:var(--accent);color:#082032;font:inherit;font-weight:750;padding:11px 13px;cursor:pointer}button.secondary{background:#2b3b56;color:var(--text);border:1px solid #435573}button.danger{background:#542b38;color:#ffdce3;border:1px solid #85465a}.actions{display:flex;gap:9px;flex-wrap:wrap;margin-top:13px}.actions button{flex:1}.metrics{display:grid;grid-template-columns:repeat(3,1fr);gap:9px}.metric{background:var(--panel2);padding:13px;border-radius:12px;min-width:0}.metric span{display:block;color:var(--muted);font-size:.8rem;margin-bottom:7px}.metric strong{font-size:clamp(1rem,4vw,1.35rem);overflow-wrap:anywhere}.positive{color:var(--good)}.negative{color:var(--bad)}.tablewrap{overflow-x:auto}table{width:100%;border-collapse:collapse;font-size:.88rem;white-space:nowrap}th,td{text-align:left;padding:10px 8px;border-bottom:1px solid var(--line)}th{color:var(--muted);font-weight:600}td:last-child,th:last-child{text-align:right}.empty{color:var(--muted);text-align:center;padding:20px 8px}.filters{display:flex;gap:9px;align-items:center;flex-wrap:wrap;margin-bottom:10px}.filters select{width:auto;flex:1;min-width:135px}.small{font-size:.8rem;color:var(--muted)}@media(max-width:520px){.fields{grid-template-columns:1fr 1fr}.metrics{grid-template-columns:1fr 1fr}.panel{padding:14px}.hide-small{display:none}}@media(max-width:350px){.fields{grid-template-columns:1fr}.full{grid-column:auto}}
+</style>
+</head>
+<body><main>
+<header><h1>OSRS Flip Tracker</h1><p>Calculate flip margins and keep a local trading ledger with realised profit/loss.</p></header>
+<section class="panel"><h2>Record a completed trade</h2>
+<form id="tradeForm"><div class="fields">
+<div><label for="item">Item name</label><input id="item" maxlength="90" placeholder="e.g. Abyssal whip" required></div>
+<div><label for="date">Trade date</label><input id="date" type="date" required></div>
+<div><label for="buy">Buy price per item (GP)</label><input id="buy" type="number" min="0" step="1" inputmode="numeric" required placeholder="100000"></div>
+<div><label for="sell">Sell price per item (GP)</label><input id="sell" type="number" min="0" step="1" inputmode="numeric" required placeholder="110000"></div>
+<div><label for="qty">Quantity sold</label><input id="qty" type="number" min="1" step="1" inputmode="numeric" value="1" required></div>
+<div><label for="tax">GE tax rate</label><select id="tax"><option value="1" selected>1%</option><option value="0.5">0.5%</option><option value="0">0% (exempt)</option><option value="2">2% (custom)</option></select></div>
+<div class="full"><label for="notes">Notes (optional)</label><input id="notes" maxlength="180" placeholder="e.g. bought overnight, quick flip"></div>
+</div><div class="actions"><button type="submit">Save completed trade</button><button type="button" class="secondary" id="clearForm">Clear form</button></div></form>
+<p class="hint">Log completed buys and sells together here. Open/uncompleted offers and unsold inventory are not included in realised P/L yet.</p></section>
+<section class="panel"><h2>Profit &amp; loss overview</h2><div class="metrics">
+<div class="metric"><span>Net realised P/L</span><strong id="net">0 GP</strong></div>
+<div class="metric"><span>Total buy cost</span><strong id="cost">0 GP</strong></div>
+<div class="metric"><span>Trades logged</span><strong id="count">0</strong></div>
+<div class="metric"><span>Winning trades</span><strong id="wins">0</strong></div>
+<div class="metric"><span>Average ROI</span><strong id="avgRoi">—</strong></div>
+<div class="metric"><span>Win rate</span><strong id="winRate">—</strong></div>
+</div><div class="actions"><button class="secondary" id="export">Export CSV</button><button class="secondary" id="backup">Backup data</button><button class="secondary" id="restoreBtn">Restore backup</button><input id="restoreFile" type="file" accept=".json,application/json" hidden></div><p class="hint">Your ledger is saved in this browser on this device. Export or back it up regularly—browser data can be cleared, and this file does not automatically sync between devices.</p></section>
+<section class="panel"><h2>Trade history</h2><div class="filters"><input id="search" placeholder="Search item or notes" aria-label="Search trades"><select id="period" aria-label="Filter date"><option value="all">All dates</option><option value="month">This month</option><option value="year">This year</option></select><select id="sort" aria-label="Sort trades"><option value="newest">Newest first</option><option value="oldest">Oldest first</option><option value="profit">Highest profit</option><option value="loss">Biggest loss</option></select></div>
+<div class="tablewrap"><table><thead><tr><th>Date / Item</th><th>Qty</th><th>Buy → Sell</th><th>P/L</th><th></th></tr></thead><tbody id="rows"></tbody></table></div><p class="empty" id="empty">No trades logged yet. Save a completed trade above to start your ledger.</p><div class="actions"><button class="danger" id="clearAll">Delete all trades</button></div></section>
+<section class="panel"><h2>Quick flip calculator</h2><div class="fields">
+<div><label for="qBuy">Buy price (GP)</label><input id="qBuy" type="number" min="0" value="100000"></div>
+<div><label for="qSell">Sell price (GP)</label><input id="qSell" type="number" min="0" value="110000"></div>
+<div><label for="qQty">Quantity</label><input id="qQty" type="number" min="1" value="1"></div>
+<div><label for="qTax">Tax rate</label><select id="qTax"><option value="1" selected>1%</option><option value="0.5">0.5%</option><option value="0">0%</option><option value="2">2% (custom)</option></select></div>
+</div><div class="metrics" style="margin-top:12px"><div class="metric"><span>Net profit / item</span><strong id="qProfit">9,000 GP</strong></div><div class="metric"><span>ROI</span><strong id="qRoi">9.00%</strong></div><div class="metric"><span>Total profit</span><strong id="qTotal">9,000 GP</strong></div><div class="metric"><span>Break-even sell</span><strong id="qBreak">101,011 GP</strong></div><div class="metric"><span>Sell for 5% ROI</span><strong id="qTarget">106,061 GP</strong></div></div></section>
+<p class="hint">Tax note: OSRS GE tax rates, exemptions and item-specific caps can vary. Select the appropriate rate and verify actual tax charged in-game. P/L uses estimated tax rounded up per item sold.</p>
+</main>
+<script>
+const $=id=>document.getElementById(id), money=n=>Math.round(n).toLocaleString('en-GB')+' GP', num=id=>Math.max(0,Number($(id).value)||0);
+const STORAGE='osrsFlipTrackerTradesV1';let trades=[];
+function load(){try{const d=JSON.parse(localStorage.getItem(STORAGE)||'[]');trades=Array.isArray(d)?d:[]}catch{trades=[]}}
+function save(){try{localStorage.setItem(STORAGE,JSON.stringify(trades));return true}catch{alert('Could not save in this browser. Export a backup to keep your trades.');return false}}
+function calc(t){const buy=Number(t.buy)||0,sell=Number(t.sell)||0,qty=Number(t.qty)||0,rate=(Number(t.tax)||0)/100;const taxEach=Math.ceil(sell*rate);const cost=buy*qty;const revenue=(sell-taxEach)*qty;const pnl=revenue-cost;return{cost,revenue,pnl,roi:cost?pnl/cost*100:null,tax:taxEach*qty}}
+function render(){
+ const total=trades.reduce((s,t)=>s+calc(t).pnl,0),cost=trades.reduce((s,t)=>s+calc(t).cost,0),wins=trades.filter(t=>calc(t).pnl>0).length;
+ const rois=trades.map(t=>calc(t).roi).filter(x=>x!==null);
+ $('net').textContent=money(total);$('net').className=total>=0?'positive':'negative';$('cost').textContent=money(cost);$('count').textContent=trades.length;$('wins').textContent=wins;$('avgRoi').textContent=rois.length?(rois.reduce((a,b)=>a+b,0)/rois.length).toFixed(2)+'%':'—';$('winRate').textContent=trades.length?(wins/trades.length*100).toFixed(1)+'%':'—';
+ const q=$('search').value.trim().toLowerCase(),period=$('period').value,sort=$('sort').value,now=new Date();
+ let list=trades.filter(t=>((t.item+' '+(t.notes||'')).toLowerCase().includes(q))).filter(t=>{if(period==='all')return true;const d=new Date(t.date+'T12:00:00');return period==='month'?d.getFullYear()===now.getFullYear()&&d.getMonth()===now.getMonth():d.getFullYear()===now.getFullYear()});
+ list.sort((a,b)=>sort==='oldest'?a.date.localeCompare(b.date):sort==='profit'?calc(b).pnl-calc(a).pnl:sort==='loss'?calc(a).pnl-calc(b).pnl:b.date.localeCompare(a.date));
+ $('rows').innerHTML='';$('empty').style.display=list.length?'none':'block';
+ for(const t of list){const c=calc(t),tr=document.createElement('tr');const td1=document.createElement('td');td1.innerHTML='';const date=document.createElement('div');date.textContent=t.date;const name=document.createElement('strong');name.textContent=t.item;const note=document.createElement('div');note.className='small';note.textContent=t.notes||'';td1.append(date,name,note);const td2=document.createElement('td');td2.textContent=Number(t.qty).toLocaleString('en-GB');const td3=document.createElement('td');td3.textContent=money(t.buy)+' → '+money(t.sell);const td4=document.createElement('td');td4.textContent=(c.pnl>0?'+':'')+money(c.pnl);td4.className=c.pnl>=0?'positive':'negative';const td5=document.createElement('td');const del=document.createElement('button');del.className='danger';del.textContent='×';del.title='Delete trade';del.setAttribute('aria-label','Delete '+t.item);del.style.padding='5px 10px';del.addEventListener('click',()=>{if(confirm('Delete this trade record?')){trades=trades.filter(x=>x.id!==t.id);save();render()}});td5.append(del);tr.append(td1,td2,td3,td4,td5);$('rows').append(tr)}
+}
+$('date').value=new Date().toISOString().slice(0,10);
+$('tradeForm').addEventListener('submit',e=>{e.preventDefault();const t={id:Date.now().toString(36)+Math.random().toString(36).slice(2,7),item:$('item').value.trim(),date:$('date').value,buy:num('buy'),sell:num('sell'),qty:Math.max(1,Math.floor(num('qty'))),tax:num('tax'),notes:$('notes').value.trim()};if(!t.item||!t.date)return;trades.push(t);save();render();$('item').value='';$('notes').value='';$('item').focus()});
+$('clearForm').addEventListener('click',()=>{$('tradeForm').reset();$('date').value=new Date().toISOString().slice(0,10);$('qty').value='1'});
+['search','period','sort'].forEach(id=>$(id).addEventListener('input',render));
+$('clearAll').addEventListener('click',()=>{if(confirm('Permanently delete every logged trade from this browser? Export a backup first if needed.')){trades=[];save();render()}});
+function csvEscape(s){return '"'+String(s??'').replaceAll('"','""')+'"'}
+$('export').addEventListener('click',()=>{const header=['Date','Item','Quantity','Buy price each','Sell price each','Tax rate percent','Estimated tax total','Net profit/loss','ROI percent','Notes'];const lines=[header,...trades.map(t=>{const c=calc(t);return[t.date,t.item,t.qty,t.buy,t.sell,t.tax,c.tax,c.pnl,c.roi===null?'':c.roi.toFixed(4),t.notes]})].map(row=>row.map(csvEscape).join(','));download(new Blob(['\ufeff'+lines.join('\r\n')],{type:'text/csv;charset=utf-8'}),'osrs-trade-history.csv')});
+$('backup').addEventListener('click',()=>download(new Blob([JSON.stringify({version:1,exportedAt:new Date().toISOString(),trades},null,2)],{type:'application/json'}),'osrs-trade-backup.json'));
+function download(blob,name){const url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(url),1000)}
+$('restoreBtn').addEventListener('click',()=>$('restoreFile').click());
+$('restoreFile').addEventListener('change',async e=>{const file=e.target.files[0];if(!file)return;try{const d=JSON.parse(await file.text()),incoming=Array.isArray(d)?d:d.trades;if(!Array.isArray(incoming))throw Error('bad');if(!confirm('Restore backup? This replaces the current trade list. Export current data first if you need it.'))return;trades=incoming.filter(t=>t&&t.id&&t.item&&t.date&&Number.isFinite(Number(t.buy))&&Number.isFinite(Number(t.sell))&&Number.isFinite(Number(t.qty)));save();render();alert('Backup restored.')}catch{alert('That backup file could not be read. Choose a valid OSRS Flip Tracker JSON backup.')}finally{e.target.value=''}});
+function quick(){const b=num('qBuy'),s=num('qSell'),q=Math.max(1,Math.floor(num('qQty'))),r=num('qTax')/100,tax=Math.ceil(s*r),p=s-tax-b,roi=b?p/b*100:null;$('qProfit').textContent=money(p);$('qProfit').className=p>=0?'positive':'negative';$('qRoi').textContent=roi===null?'—':roi.toFixed(2)+'%';$('qRoi').className=(roi??-1)>=0?'positive':'negative';$('qTotal').textContent=money(p*q);$('qTotal').className=p>=0?'positive':'negative';$('qBreak').textContent=r<1?money(Math.ceil((b+1)/(1-r))):'—';$('qTarget').textContent=r<1?money(Math.ceil(b*1.05/(1-r))):'—'}
+['qBuy','qSell','qQty','qTax'].forEach(id=>$(id).addEventListener('input',quick));load();render();quick();
+</script></body></html>
